@@ -1,0 +1,124 @@
+<main class="shell">
+  <section class="masthead">
+    <div>
+      <p class="eyebrow">Team Task Board</p>
+      <h1>Git practice project</h1>
+    </div>
+    <div class="stats" aria-label="Task dashboard">
+      <div>
+        <span>{{ dashboard().total }}</span>
+        Total
+      </div>
+      <div>
+        <span>{{ dashboard().todo }}</span>
+        To Do
+      </div>
+      <div>
+        <span>{{ dashboard().inProgress }}</span>
+        Active
+      </div>
+      <div>
+        <span>{{ dashboard().done }}</span>
+        Done
+      </div>
+    </div>
+  </section>
+
+  <section class="workspace">
+    <form class="task-form" (ngSubmit)="saveTask()">
+      <h2>{{ form().id === null ? 'Create task' : 'Edit task' }}</h2>
+
+      <label>
+        Title
+        <input
+          name="title"
+          type="text"
+          required
+          [ngModel]="form().title"
+          (ngModelChange)="form.update(current => ({ ...current, title: $event }))"
+        />
+      </label>
+
+      <label>
+        Description
+        <textarea
+          name="description"
+          rows="4"
+          [ngModel]="form().description"
+          (ngModelChange)="form.update(current => ({ ...current, description: $event }))"
+        ></textarea>
+      </label>
+
+      <label>
+        Status
+        <select
+          name="status"
+          [ngModel]="form().status"
+          (ngModelChange)="setFormStatus($event)"
+        >
+          @for (status of statuses; track status.value) {
+            <option [value]="status.value">{{ status.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Assigned to
+        <select
+          name="assignedUserId"
+          [ngModel]="form().assignedUserId"
+          (ngModelChange)="setAssignedUser($event)"
+        >
+          @for (user of users(); track user.id) {
+            <option [value]="user.id">{{ user.name }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="form-actions">
+        <button type="submit">{{ form().id === null ? 'Add task' : 'Save changes' }}</button>
+        <button type="button" class="secondary" (click)="resetForm()">Reset</button>
+      </div>
+    </form>
+
+    <section class="board" aria-label="Tasks by status">
+      @for (column of columns(); track column.value) {
+        <article class="column">
+          <header>
+            <h2>{{ column.label }}</h2>
+            <span>{{ column.tasks.length }}</span>
+          </header>
+
+          <div class="cards">
+            @for (task of column.tasks; track task.id) {
+              <article class="task-card">
+                <div>
+                  <h3>{{ task.title }}</h3>
+                  <p>{{ task.description || 'No description yet.' }}</p>
+                </div>
+
+                <p class="assignee">{{ assignedUserName(task.assignedUserId) }}</p>
+
+                <div class="card-actions">
+                  <select
+                    aria-label="Change status"
+                    [ngModel]="task.status"
+                    (ngModelChange)="changeStatusFromInput(task, $event)"
+                  >
+                    @for (status of statuses; track status.value) {
+                      <option [value]="status.value">{{ status.label }}</option>
+                    }
+                  </select>
+                  <button type="button" class="secondary" (click)="editTask(task)">Edit</button>
+                  <button type="button" class="danger" (click)="deleteTask(task.id)">Delete</button>
+                </div>
+              </article>
+            } @empty {
+              <p class="empty">No tasks here.</p>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  </section>
+</main>
