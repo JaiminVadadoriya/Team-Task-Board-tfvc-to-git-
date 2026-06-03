@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Microsoft.AspNetCore.Mvc;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,13 @@ if (app.Environment.IsDevelopment())
     _ = app.MapOpenApi();
 }
 
+app.Use((context, next) =>
+{
+    Console.WriteLine($"Incoming request: {context.Request.Method} {context.Request.Path}");
+    return next();
+});
+
+app.UseRouting();
 app.UseCors("TaskBoardUi");
 
 User[] users =
@@ -37,24 +45,26 @@ tasks.TryAdd(1, new BoardTask(1, "Create task API", "Expose endpoints for task C
 tasks.TryAdd(2, new BoardTask(2, "Build task list", "Show tasks grouped by status.", TaskStatus.ToDo, 2));
 tasks.TryAdd(3, new BoardTask(3, "Draft PR template", "Add a lightweight review checklist.", TaskStatus.Done, 3));
 
-app.MapGet("/api/users", () => Results.Ok(users));
+RouteGroupBuilder api = app.MapGroup("/api").RequireCors("TaskBoardUi");
 
-app.MapGet("/api/health", () => Results.Ok(new { Status = "Healthy" }));
+api.MapGet("/users", () => Results.Ok(users));
 
-app.MapGet("/api/tasks", () =>
+api.MapGet("/health", () => Results.Ok(new { Status = "Healthy" }));
+
+api.MapGet("/tasks", () =>
 {
     IOrderedEnumerable<BoardTask> orderedTasks = tasks.Values.OrderBy(task => task.Id);
     return Results.Ok(orderedTasks);
 });
 
-app.MapGet("/api/tasks/{id:int}", (int id) =>
+api.MapGet("/tasks/{id:int}", (int id) =>
 {
     return tasks.TryGetValue(id, out BoardTask? task)
         ? Results.Ok(task)
         : Results.NotFound();
 });
 
-app.MapPost("/api/tasks", (TaskRequest request) =>
+api.MapPost("/tasks", (TaskRequest request) =>
 {
     if (string.IsNullOrWhiteSpace(request.Title))
     {
@@ -78,7 +88,7 @@ app.MapPost("/api/tasks", (TaskRequest request) =>
     return Results.Created($"/api/tasks/{id}", task);
 });
 
-app.MapPut("/api/tasks/{id:int}", (int id, TaskRequest request) =>
+api.MapPut("/tasks/{id:int}", (int id, TaskRequest request) =>
 {
     if (!tasks.ContainsKey(id))
     {
@@ -106,7 +116,7 @@ app.MapPut("/api/tasks/{id:int}", (int id, TaskRequest request) =>
     return Results.Ok(task);
 });
 
-app.MapPatch("/api/tasks/{id:int}/status", (int id, StatusRequest request) =>
+api.MapPatch("/tasks/{id:int}/status", (int id, StatusRequest request) =>
 {
     if (!tasks.TryGetValue(id, out BoardTask? task))
     {
@@ -118,7 +128,7 @@ app.MapPatch("/api/tasks/{id:int}/status", (int id, StatusRequest request) =>
     return Results.Ok(updatedTask);
 });
 
-app.MapDelete("/api/tasks/{id:int}", (int id) =>
+api.MapDelete("/tasks/{id:int}", (int id) =>
 {
     return tasks.TryRemove(id, out _)
         ? Results.NoContent()

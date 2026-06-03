@@ -91,7 +91,7 @@
             (ngModelChange)="setFormStatus($event)"
           >
             @for (s of statuses; track s.value) {
-              <option [value]="s.value">{{ s.icon }} {{ s.label }}</option>
+              <option [ngValue]="s.value">{{ s.icon }} {{ s.label }}</option>
             }
           </select>
         </label>
@@ -164,7 +164,7 @@
                       (ngModelChange)="changeStatusFromInput(task, $event)"
                     >
                       @for (s of statuses; track s.value) {
-                        <option [value]="s.value">{{ s.icon }} {{ s.label }}</option>
+                        <option [ngValue]="s.value">{{ s.icon }} {{ s.label }}</option>
                       }
                     </select>
 

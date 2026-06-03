@@ -119,7 +119,7 @@ export class App implements OnInit {
     });
   }
 
-  changeStatusFromInput(task: BoardTask, value: string): void {
+  changeStatusFromInput(task: BoardTask, value: number | string): void {
     const status = Number(value) as TaskStatus;
     this.taskService.updateStatus(task.id, status).subscribe({
       next: (updated) => {
@@ -129,7 +129,7 @@ export class App implements OnInit {
     });
   }
 
-  setFormStatus(value: string): void {
+  setFormStatus(value: number | string): void {
     this.form.update((current) => ({ ...current, status: Number(value) as TaskStatus }));
   }
 
