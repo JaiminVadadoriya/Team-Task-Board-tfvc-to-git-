@@ -1,20 +1,6 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
-type TaskStatus = 0 | 1 | 2;
-
-interface BoardUser {
-  id: number;
-  name: string;
-}
-
-interface BoardTask {
-  id: number;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  assignedUserId: number;
-}
+import { TaskService, BoardTask, BoardUser, TaskStatus } from './task.service';
 
 interface TaskForm {
   id: number | null;
@@ -30,119 +16,117 @@ interface TaskForm {
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
-  readonly users = signal<BoardUser[]>([
-    { id: 1, name: 'Avery Patel' },
-    { id: 2, name: 'Jordan Lee' },
-    { id: 3, name: 'Sam Rivera' },
-    { id: 4, name: 'Taylor Kim' },
-  ]);
+export class App implements OnInit {
+  private readonly taskService = inject(TaskService);
 
-  readonly tasks = signal<BoardTask[]>([
-    {
-      id: 1,
-      title: 'Create task API',
-      description: 'Expose endpoints for task CRUD.',
-      status: 1,
-      assignedUserId: 1,
-    },
-    {
-      id: 2,
-      title: 'Build task list',
-      description: 'Show tasks grouped by status.',
-      status: 0,
-      assignedUserId: 2,
-    },
-    {
-      id: 3,
-      title: 'Draft PR template',
-      description: 'Add a lightweight review checklist.',
-      status: 2,
-      assignedUserId: 3,
-    },
-  ]);
-
+  readonly users = signal<BoardUser[]>([]);
+  readonly tasks = signal<BoardTask[]>([]);
   readonly form = signal<TaskForm>(this.blankForm());
-  readonly statuses: Array<{ value: TaskStatus; label: string }> = [
-    { value: 0, label: 'To Do' },
-    { value: 1, label: 'In Progress' },
-    { value: 2, label: 'Done' },
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+
+  readonly statuses: { value: TaskStatus; label: string; icon: string }[] = [
+    { value: 0, label: 'To Do', icon: '○' },
+    { value: 1, label: 'In Progress', icon: '◑' },
+    { value: 2, label: 'Done', icon: '●' },
   ];
 
   readonly dashboard = computed(() => {
     const tasks = this.tasks();
     return {
       total: tasks.length,
-      todo: tasks.filter((task) => task.status === 0).length,
-      inProgress: tasks.filter((task) => task.status === 1).length,
-      done: tasks.filter((task) => task.status === 2).length,
+      todo: tasks.filter((t) => t.status === 0).length,
+      inProgress: tasks.filter((t) => t.status === 1).length,
+      done: tasks.filter((t) => t.status === 2).length,
     };
   });
 
   readonly columns = computed(() =>
     this.statuses.map((status) => ({
       ...status,
-      tasks: this.tasks().filter((task) => task.status === status.value),
+      tasks: this.tasks().filter((t) => t.status === status.value),
     })),
   );
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  private loadData(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.taskService.getUsers().subscribe({
+      next: (users) => this.users.set(users),
+      error: () => this.setError(),
+    });
+
+    this.taskService.getTasks().subscribe({
+      next: (tasks) => {
+        this.tasks.set(tasks);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.setError();
+        this.loading.set(false);
+      },
+    });
+  }
 
   saveTask(): void {
     const form = this.form();
     const title = form.title.trim();
+    if (!title) return;
 
-    if (!title) {
-      return;
-    }
+    const request = {
+      title,
+      description: form.description.trim(),
+      status: form.status,
+      assignedUserId: Number(form.assignedUserId),
+    };
 
     if (form.id === null) {
-      const nextId = Math.max(0, ...this.tasks().map((task) => task.id)) + 1;
-      this.tasks.update((tasks) => [
-        ...tasks,
-        {
-          id: nextId,
-          title,
-          description: form.description.trim(),
-          status: form.status,
-          assignedUserId: Number(form.assignedUserId),
+      this.taskService.createTask(request).subscribe({
+        next: (task) => {
+          this.tasks.update((tasks) => [...tasks, task]);
+          this.resetForm();
         },
-      ]);
+        error: () => this.setError(),
+      });
     } else {
-      this.tasks.update((tasks) =>
-        tasks.map((task) =>
-          task.id === form.id
-            ? {
-                ...task,
-                title,
-                description: form.description.trim(),
-                status: form.status,
-                assignedUserId: Number(form.assignedUserId),
-              }
-            : task,
-        ),
-      );
+      this.taskService.updateTask(form.id, request).subscribe({
+        next: (updated) => {
+          this.tasks.update((tasks) => tasks.map((t) => (t.id === updated.id ? updated : t)));
+          this.resetForm();
+        },
+        error: () => this.setError(),
+      });
     }
-
-    this.resetForm();
   }
 
   editTask(task: BoardTask): void {
     this.form.set({ ...task });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   deleteTask(taskId: number): void {
-    this.tasks.update((tasks) => tasks.filter((task) => task.id !== taskId));
-
-    if (this.form().id === taskId) {
-      this.resetForm();
-    }
+    this.taskService.deleteTask(taskId).subscribe({
+      next: () => {
+        this.tasks.update((tasks) => tasks.filter((t) => t.id !== taskId));
+        if (this.form().id === taskId) this.resetForm();
+      },
+      error: () => this.setError(),
+    });
   }
 
-  changeStatus(task: BoardTask, status: TaskStatus): void {
-    this.tasks.update((tasks) =>
-      tasks.map((currentTask) =>
-        currentTask.id === task.id ? { ...currentTask, status: Number(status) as TaskStatus } : currentTask,
-      ),
-    );
+  changeStatusFromInput(task: BoardTask, value: string): void {
+    const status = Number(value) as TaskStatus;
+    this.taskService.updateStatus(task.id, status).subscribe({
+      next: (updated) => {
+        this.tasks.update((tasks) => tasks.map((t) => (t.id === updated.id ? updated : t)));
+      },
+      error: () => this.setError(),
+    });
   }
 
   setFormStatus(value: string): void {
@@ -153,12 +137,25 @@ export class App {
     this.form.update((current) => ({ ...current, assignedUserId: Number(value) }));
   }
 
-  changeStatusFromInput(task: BoardTask, value: string): void {
-    this.changeStatus(task, Number(value) as TaskStatus);
+  assignedUser(userId: number): BoardUser | undefined {
+    return this.users().find((u) => u.id === Number(userId));
   }
 
-  assignedUserName(userId: number): string {
-    return this.users().find((user) => user.id === Number(userId))?.name ?? 'Unassigned';
+  initials(name: string): string {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+
+  statusClass(status: TaskStatus): string {
+    return ['status-todo', 'status-inprogress', 'status-done'][status] ?? '';
+  }
+
+  dismissError(): void {
+    this.error.set(null);
   }
 
   resetForm(): void {
@@ -166,12 +163,10 @@ export class App {
   }
 
   private blankForm(): TaskForm {
-    return {
-      id: null,
-      title: '',
-      description: '',
-      status: 0,
-      assignedUserId: 1,
-    };
+    return { id: null, title: '', description: '', status: 0, assignedUserId: 1 };
+  }
+
+  private setError(): void {
+    this.error.set('Something went wrong. Is the API running on port 5013?');
   }
 }

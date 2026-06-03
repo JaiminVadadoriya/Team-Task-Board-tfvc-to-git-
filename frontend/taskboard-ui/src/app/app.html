@@ -1,124 +1,204 @@
 <main class="shell">
-  <section class="masthead">
-    <div>
-      <p class="eyebrow">Team Task Board</p>
-      <h1>Git practice project</h1>
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <p class="eyebrow">Team Task Board</p>
+        <h1>Git practice project</h1>
+      </div>
+
+      <div class="stats" aria-label="Task dashboard">
+        <div class="stat-card">
+          <span class="stat-value">{{ dashboard().total }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-card is-todo">
+          <span class="stat-value">{{ dashboard().todo }}</span>
+          <span class="stat-label">To Do</span>
+        </div>
+        <div class="stat-card is-active">
+          <span class="stat-value">{{ dashboard().inProgress }}</span>
+          <span class="stat-label">Active</span>
+        </div>
+        <div class="stat-card is-done">
+          <span class="stat-value">{{ dashboard().done }}</span>
+          <span class="stat-label">Done</span>
+        </div>
+      </div>
     </div>
-    <div class="stats" aria-label="Task dashboard">
-      <div>
-        <span>{{ dashboard().total }}</span>
-        Total
-      </div>
-      <div>
-        <span>{{ dashboard().todo }}</span>
-        To Do
-      </div>
-      <div>
-        <span>{{ dashboard().inProgress }}</span>
-        Active
-      </div>
-      <div>
-        <span>{{ dashboard().done }}</span>
-        Done
-      </div>
+  </header>
+
+  <!-- ── Error banner ────────────────────────────────────────────────── -->
+  @if (error()) {
+    <div class="error-banner" role="alert">
+      <span>⚠ {{ error() }}</span>
+      <button type="button" aria-label="Dismiss error" (click)="dismissError()">✕</button>
     </div>
-  </section>
+  }
 
-  <section class="workspace">
-    <form class="task-form" (ngSubmit)="saveTask()">
-      <h2>{{ form().id === null ? 'Create task' : 'Edit task' }}</h2>
+  <!-- ── Loading ─────────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-wrap">
+      <div class="spinner" role="status" aria-label="Loading tasks"></div>
+      <p class="loading-text">Connecting to API…</p>
+    </div>
+  } @else {
 
-      <label>
-        Title
-        <input
-          name="title"
-          type="text"
-          required
-          [ngModel]="form().title"
-          (ngModelChange)="form.update(current => ({ ...current, title: $event }))"
-        />
-      </label>
+    <!-- ── Workspace ──────────────────────────────────────────────── -->
+    <section class="workspace">
 
-      <label>
-        Description
-        <textarea
-          name="description"
-          rows="4"
-          [ngModel]="form().description"
-          (ngModelChange)="form.update(current => ({ ...current, description: $event }))"
-        ></textarea>
-      </label>
-
-      <label>
-        Status
-        <select
-          name="status"
-          [ngModel]="form().status"
-          (ngModelChange)="setFormStatus($event)"
-        >
-          @for (status of statuses; track status.value) {
-            <option [value]="status.value">{{ status.label }}</option>
+      <!-- ── Form ──────────────────────────────────────────────────── -->
+      <form class="task-form" (ngSubmit)="saveTask()">
+        <div class="form-title">
+          <h2>{{ form().id === null ? 'New task' : 'Edit task' }}</h2>
+          @if (form().id !== null) {
+            <span class="form-badge">Editing</span>
           }
-        </select>
-      </label>
+        </div>
 
-      <label>
-        Assigned to
-        <select
-          name="assignedUserId"
-          [ngModel]="form().assignedUserId"
-          (ngModelChange)="setAssignedUser($event)"
-        >
-          @for (user of users(); track user.id) {
-            <option [value]="user.id">{{ user.name }}</option>
-          }
-        </select>
-      </label>
+        <label>
+          Title
+          <input
+            id="task-title"
+            name="title"
+            type="text"
+            placeholder="What needs to be done?"
+            required
+            [ngModel]="form().title"
+            (ngModelChange)="form.update(c => ({ ...c, title: $event }))"
+          />
+        </label>
 
-      <div class="form-actions">
-        <button type="submit">{{ form().id === null ? 'Add task' : 'Save changes' }}</button>
-        <button type="button" class="secondary" (click)="resetForm()">Reset</button>
-      </div>
-    </form>
+        <label>
+          Description
+          <textarea
+            id="task-description"
+            name="description"
+            rows="3"
+            placeholder="Optional details…"
+            [ngModel]="form().description"
+            (ngModelChange)="form.update(c => ({ ...c, description: $event }))"
+          ></textarea>
+        </label>
 
-    <section class="board" aria-label="Tasks by status">
-      @for (column of columns(); track column.value) {
-        <article class="column">
-          <header>
-            <h2>{{ column.label }}</h2>
-            <span>{{ column.tasks.length }}</span>
-          </header>
-
-          <div class="cards">
-            @for (task of column.tasks; track task.id) {
-              <article class="task-card">
-                <div>
-                  <h3>{{ task.title }}</h3>
-                  <p>{{ task.description || 'No description yet.' }}</p>
-                </div>
-
-                <p class="assignee">{{ assignedUserName(task.assignedUserId) }}</p>
-
-                <div class="card-actions">
-                  <select
-                    aria-label="Change status"
-                    [ngModel]="task.status"
-                    (ngModelChange)="changeStatusFromInput(task, $event)"
-                  >
-                    @for (status of statuses; track status.value) {
-                      <option [value]="status.value">{{ status.label }}</option>
-                    }
-                  </select>
-                  <button type="button" class="secondary" (click)="editTask(task)">Edit</button>
-                  <button type="button" class="danger" (click)="deleteTask(task.id)">Delete</button>
-                </div>
-              </article>
-            } @empty {
-              <p class="empty">No tasks here.</p>
+        <label>
+          Status
+          <select
+            id="task-status"
+            name="status"
+            [ngModel]="form().status"
+            (ngModelChange)="setFormStatus($event)"
+          >
+            @for (s of statuses; track s.value) {
+              <option [value]="s.value">{{ s.icon }} {{ s.label }}</option>
             }
-          </div>
-        </article>
-      }
+          </select>
+        </label>
+
+        <label>
+          Assigned to
+          <select
+            id="task-assignee"
+            name="assignedUserId"
+            [ngModel]="form().assignedUserId"
+            (ngModelChange)="setAssignedUser($event)"
+          >
+            @for (user of users(); track user.id) {
+              <option [value]="user.id">{{ user.name }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" id="btn-save-task">
+            {{ form().id === null ? '＋ Add task' : '✓ Save changes' }}
+          </button>
+          <button type="button" class="btn-secondary" id="btn-reset-form" (click)="resetForm()">
+            Reset
+          </button>
+        </div>
+      </form>
+
+      <!-- ── Board ──────────────────────────────────────────────────── -->
+      <section class="board" aria-label="Tasks by status">
+        @for (col of columns(); track col.value) {
+          <article
+            class="column"
+            [class.col-todo]="col.value === 0"
+            [class.col-active]="col.value === 1"
+            [class.col-done]="col.value === 2"
+          >
+            <header class="column-header">
+              <div class="column-title">
+                <span class="column-dot"></span>
+                <h2>{{ col.label }}</h2>
+              </div>
+              <span class="column-count">{{ col.tasks.length }}</span>
+            </header>
+
+            <div class="cards">
+              @for (task of col.tasks; track task.id) {
+                <article class="task-card">
+
+                  <div>
+                    <h3>{{ task.title }}</h3>
+                    <p class="task-desc">{{ task.description || 'No description.' }}</p>
+                  </div>
+
+                  @if (assignedUser(task.assignedUserId); as user) {
+                    <div class="assignee">
+                      <span class="avatar" aria-hidden="true">{{ initials(user.name) }}</span>
+                      <span class="assignee-name">{{ user.name }}</span>
+                    </div>
+                  }
+
+                  <span class="status-pill" [class]="statusClass(task.status)">
+                    {{ statuses[task.status].label }}
+                  </span>
+
+                  <div class="card-actions">
+                    <select
+                      [attr.aria-label]="'Change status of ' + task.title"
+                      [ngModel]="task.status"
+                      (ngModelChange)="changeStatusFromInput(task, $event)"
+                    >
+                      @for (s of statuses; track s.value) {
+                        <option [value]="s.value">{{ s.icon }} {{ s.label }}</option>
+                      }
+                    </select>
+
+                    <button
+                      type="button"
+                      class="btn-secondary"
+                      [attr.id]="'btn-edit-' + task.id"
+                      (click)="editTask(task)"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn-danger"
+                      [attr.id]="'btn-delete-' + task.id"
+                      (click)="deleteTask(task.id)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              } @empty {
+                <div class="empty-col">
+                  <span class="empty-col-icon">{{ col.icon }}</span>
+                  <span>No tasks here yet.</span>
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </section>
+
     </section>
-  </section>
+  }
+
 </main>

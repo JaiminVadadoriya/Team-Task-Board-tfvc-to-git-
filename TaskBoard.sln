@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36202.13 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{A1A5B8F2-8A2C-4A22-9E86-3E3B5E3B8B11}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "frontend", "frontend", "{B5D4B7D9-0A6B-4D5E-9A4A-31A2A7A8B312}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{C6D2D71A-1F2A-4A2D-A7FA-4C56E2DCC423}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{D7A3B0AB-6F48-4D1A-9C4F-8C69A0BE7434}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskBoard.Api", "backend\TaskBoard.Api\TaskBoard.Api.csproj", "{C7A91487-34F7-E145-8A72-15E1BC9D36EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C7A91487-34F7-E145-8A72-15E1BC9D36EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7A91487-34F7-E145-8A72-15E1BC9D36EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7A91487-34F7-E145-8A72-15E1BC9D36EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7A91487-34F7-E145-8A72-15E1BC9D36EC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C7A91487-34F7-E145-8A72-15E1BC9D36EC} = {A1A5B8F2-8A2C-4A22-9E86-3E3B5E3B8B11}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F38F4345-F34B-4A66-9437-D939DF8C3E93}
+	EndGlobalSection
+EndGlobal

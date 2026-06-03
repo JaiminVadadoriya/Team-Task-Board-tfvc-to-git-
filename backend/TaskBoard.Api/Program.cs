@@ -1,37 +1,37 @@
 using System.Collections.Concurrent;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("TaskBoardUi", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        _ = policy.AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 builder.Services.AddOpenApi();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    _ = app.MapOpenApi();
 }
 
 app.UseCors("TaskBoardUi");
 
-var users = new[]
-{
+User[] users =
+[
     new User(1, "Avery Patel"),
     new User(2, "Jordan Lee"),
     new User(3, "Sam Rivera"),
     new User(4, "Taylor Kim")
-};
+];
 
-var tasks = new ConcurrentDictionary<int, BoardTask>();
-var nextTaskId = 4;
+ConcurrentDictionary<int, BoardTask> tasks = new();
+int nextTaskId = 4;
 
 tasks.TryAdd(1, new BoardTask(1, "Create task API", "Expose endpoints for task CRUD.", TaskStatus.InProgress, 1));
 tasks.TryAdd(2, new BoardTask(2, "Build task list", "Show tasks grouped by status.", TaskStatus.ToDo, 2));
@@ -39,15 +39,17 @@ tasks.TryAdd(3, new BoardTask(3, "Draft PR template", "Add a lightweight review 
 
 app.MapGet("/api/users", () => Results.Ok(users));
 
+app.MapGet("/api/health", () => Results.Ok(new { Status = "Healthy" }));
+
 app.MapGet("/api/tasks", () =>
 {
-    var orderedTasks = tasks.Values.OrderBy(task => task.Id);
+    IOrderedEnumerable<BoardTask> orderedTasks = tasks.Values.OrderBy(task => task.Id);
     return Results.Ok(orderedTasks);
 });
 
 app.MapGet("/api/tasks/{id:int}", (int id) =>
 {
-    return tasks.TryGetValue(id, out var task)
+    return tasks.TryGetValue(id, out BoardTask? task)
         ? Results.Ok(task)
         : Results.NotFound();
 });
@@ -64,8 +66,8 @@ app.MapPost("/api/tasks", (TaskRequest request) =>
         return Results.BadRequest("Assigned user was not found.");
     }
 
-    var id = Interlocked.Increment(ref nextTaskId);
-    var task = new BoardTask(
+    int id = Interlocked.Increment(ref nextTaskId);
+    BoardTask task = new(
         id,
         request.Title.Trim(),
         request.Description.Trim(),
@@ -93,7 +95,7 @@ app.MapPut("/api/tasks/{id:int}", (int id, TaskRequest request) =>
         return Results.BadRequest("Assigned user was not found.");
     }
 
-    var task = new BoardTask(
+    BoardTask task = new(
         id,
         request.Title.Trim(),
         request.Description.Trim(),
@@ -106,12 +108,12 @@ app.MapPut("/api/tasks/{id:int}", (int id, TaskRequest request) =>
 
 app.MapPatch("/api/tasks/{id:int}/status", (int id, StatusRequest request) =>
 {
-    if (!tasks.TryGetValue(id, out var task))
+    if (!tasks.TryGetValue(id, out BoardTask? task))
     {
         return Results.NotFound();
     }
 
-    var updatedTask = task with { Status = request.Status };
+    BoardTask updatedTask = task with { Status = request.Status };
     tasks[id] = updatedTask;
     return Results.Ok(updatedTask);
 });
@@ -125,24 +127,24 @@ app.MapDelete("/api/tasks/{id:int}", (int id) =>
 
 app.Run();
 
-record User(int Id, string Name);
+internal sealed record User(int Id, string Name);
 
-record BoardTask(
+internal sealed record BoardTask(
     int Id,
     string Title,
     string Description,
     TaskStatus Status,
     int AssignedUserId);
 
-record TaskRequest(
+internal sealed record TaskRequest(
     string Title,
     string Description,
     TaskStatus Status,
     int AssignedUserId);
 
-record StatusRequest(TaskStatus Status);
+internal sealed record StatusRequest(TaskStatus Status);
 
-enum TaskStatus
+internal enum TaskStatus
 {
     ToDo,
     InProgress,

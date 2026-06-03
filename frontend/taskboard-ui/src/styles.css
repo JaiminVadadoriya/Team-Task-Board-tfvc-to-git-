@@ -1,1 +1,64 @@
-/* You can add global styles to this file, and also import other style files */
+/* ── Global reset & design tokens ───────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Palette */
+  --clr-bg:          #0d1117;
+  --clr-surface:     #161b22;
+  --clr-surface-2:   #1e2530;
+  --clr-border:      #2d3748;
+  --clr-border-soft: #1e2a38;
+
+  --clr-teal-400:    #2dd4bf;
+  --clr-teal-500:    #14b8a6;
+  --clr-teal-600:    #0d9488;
+
+  --clr-text-primary:   #e2e8f0;
+  --clr-text-secondary: #94a3b8;
+  --clr-text-muted:     #64748b;
+
+  /* Status colours */
+  --clr-todo:       #f59e0b;
+  --clr-inprogress: #3b82f6;
+  --clr-done:       #22c55e;
+
+  /* Spacing */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+  --radius-pill:999px;
+
+  /* Typography */
+  --font: 'Inter', system-ui, sans-serif;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur-med:  220ms;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--clr-bg);
+  color: var(--clr-text-primary);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--clr-text-muted); }
