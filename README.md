@@ -95,6 +95,7 @@ See the **docs/** folder for the full workshop material:
 - [Git Training Plan](docs/git-training-plan.md) — sprint-by-sprint plan and phase breakdown
 - [Git Exercises](docs/git-exercises.md) — hands-on drills (reflog, revert, cherry-pick, rebase)
 - [Branch Protection](docs/branch-protection.md) — recommended GitHub ruleset settings
+- [TFVC to Git Migration Guide](docs/tfvc-to-git-migration-guide.md) — comprehensive guide for migrating repositories from TFVC to Git
 
 ---
 
